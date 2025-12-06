@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: guardops_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: guardops
+      POSTGRES_PASSWORD: guardops
+      POSTGRES_DB: guardops
+    ports:
+      - '5432:5432'
+    volumes:
+      - guardops_pgdata:/var/lib/postgresql/data
+
+volumes:
+  guardops_pgdata:

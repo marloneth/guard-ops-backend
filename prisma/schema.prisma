@@ -1,0 +1,219 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ------------------------------------------------------
+//  Users & Roles
+// ------------------------------------------------------
+model User {
+  id            String     @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String     @unique
+  passwordHash  String
+  phone         String?
+  isActive      Boolean    @default(true)
+
+  roleId        Int
+  role          Role       @relation(fields: [roleId], references: [id])
+
+  personnelFile PersonnelFile?
+  assignedShifts AssignedShift[]
+  patrolLogs     PatrolLog[]
+  formResponses  FormResponse[]
+  auditLogs      AuditLog[]
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Role {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+
+  users User[]
+}
+
+// ------------------------------------------------------
+//  Personnel Files
+// ------------------------------------------------------
+model PersonnelFile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+
+  address         String?
+  emergencyPhone  String?
+  hireDate        DateTime?
+  terminationDate DateTime?
+  notes           String?
+}
+
+// ------------------------------------------------------
+//  Sites / Locations
+// ------------------------------------------------------
+model Site {
+  id          String          @id @default(uuid())
+  name        String
+  address     String?
+  description String?
+
+  assignedShifts AssignedShift[]
+  patrolRoutes    PatrolRoute[]
+  formResponses   FormResponse[]
+}
+
+// ------------------------------------------------------
+//  Shifts & Schedules
+// ------------------------------------------------------
+model Shift {
+  id        String           @id @default(uuid())
+  name      String
+  startsAt  DateTime
+  endsAt    DateTime
+  createdAt DateTime         @default(now())
+
+  assignedShifts AssignedShift[]
+}
+
+model AssignedShift {
+  id       String   @id @default(uuid())
+  date     DateTime
+
+  shiftId  String
+  shift    Shift    @relation(fields: [shiftId], references: [id])
+
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+
+  siteId   String
+  site     Site     @relation(fields: [siteId], references: [id])
+}
+
+// ------------------------------------------------------
+//  Patrol Routes & QR Code Points
+// ------------------------------------------------------
+model PatrolRoute {
+  id        String         @id @default(uuid())
+  siteId    String
+  name      String
+
+  site      Site           @relation(fields: [siteId], references: [id])
+  patrolPoints PatrolPoint[]
+}
+
+model PatrolPoint {
+  id              String       @id @default(uuid())
+  patrolRouteId   String
+  label           String
+  qrCodeValue     String       @unique
+
+  patrolRoute     PatrolRoute  @relation(fields: [patrolRouteId], references: [id])
+  patrolLogs      PatrolLog[]
+}
+
+model PatrolLog {
+  id              String     @id @default(uuid())
+  patrolPointId   String
+  userId          String
+  scannedAt       DateTime   @default(now())
+  latitude        Float?
+  longitude       Float?
+  notes           String?
+
+  patrolPoint     PatrolPoint @relation(fields: [patrolPointId], references: [id])
+  user            User        @relation(fields: [userId], references: [id])
+}
+
+// ------------------------------------------------------
+//  Forms (Digital & Physical)
+// ------------------------------------------------------
+model Form {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  createdBy   String
+
+  fields      FormField[]
+  responses   FormResponse[]
+}
+
+model FormField {
+  id       String   @id @default(uuid())
+  formId   String
+  label    String
+  type     FieldType
+  required Boolean  @default(false)
+
+  form     Form     @relation(fields: [formId], references: [id])
+  values   FormResponseValue[]
+}
+
+model FormResponse {
+  id         String    @id @default(uuid())
+  formId     String
+  userId     String
+  siteId     String?
+  isDigital  Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  form       Form      @relation(fields: [formId], references: [id])
+  user       User      @relation(fields: [userId], references: [id])
+  site       Site?     @relation(fields: [siteId], references: [id])
+  values     FormResponseValue[]
+  attachments FormAttachment[]
+}
+
+model FormResponseValue {
+  id          String    @id @default(uuid())
+  responseId  String
+  fieldId     String
+  value       String
+
+  response    FormResponse @relation(fields: [responseId], references: [id])
+  field       FormField    @relation(fields: [fieldId], references: [id])
+}
+
+model FormAttachment {
+  id          String   @id @default(uuid())
+  responseId  String
+  fileUrl     String
+
+  response    FormResponse @relation(fields: [responseId], references: [id])
+}
+
+// ------------------------------------------------------
+//  Audit Logs
+// ------------------------------------------------------
+model AuditLog {
+  id         String    @id @default(uuid())
+  userId     String
+  action     String
+  entity     String
+  entityId   String?
+  timestamp  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id])
+}
+
+// ------------------------------------------------------
+//  Enums
+// ------------------------------------------------------
+enum FieldType {
+  TEXT
+  NUMBER
+  CHECKBOX
+  SIGNATURE
+  PHOTO
+}
