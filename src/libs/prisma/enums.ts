@@ -18,3 +18,12 @@ export const FieldType = {
 } as const
 
 export type FieldType = (typeof FieldType)[keyof typeof FieldType]
+
+
+export const RoleName = {
+  ADMIN: 'ADMIN',
+  SUPERVISOR: 'SUPERVISOR',
+  GUARD: 'GUARD'
+} as const
+
+export type RoleName = (typeof RoleName)[keyof typeof RoleName]

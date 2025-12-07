@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider  = "prisma-client-js"
 }
 
 datasource db {
@@ -40,9 +39,10 @@ model User {
 
 model Role {
   id    Int     @id @default(autoincrement())
-  name  String  @unique
+  name  RoleName  @unique
 
   users User[]
+  createdAt DateTime @default(now())
 }
 
 // ------------------------------------------------------
@@ -217,3 +217,10 @@ enum FieldType {
   SIGNATURE
   PHOTO
 }
+
+enum RoleName {
+  ADMIN
+  SUPERVISOR
+  GUARD
+}
+
