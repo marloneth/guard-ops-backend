@@ -137,6 +137,33 @@ describe('UsersService', () => {
       expect(result).toEqual(mockUser);
     });
 
+    it('should throw an error when email is nopt', async () => {
+      const createData = {
+        email: 'newuser@test.com',
+        firstName: 'New',
+        lastName: 'User',
+        passwordHash: 'hashed-password',
+        role: { connect: { id: 2 } },
+      };
+      const mockUser = {
+        id: 'user-3',
+        email: 'newuser@test.com',
+        firstName: 'New',
+        lastName: 'User',
+        passwordHash: 'hashed-password',
+        roleId: 2,
+      };
+
+      mockPrismaService.user.create.mockResolvedValueOnce(mockUser);
+
+      const result = await service.create(createData);
+
+      expect(mockPrismaService.user.create).toHaveBeenCalledWith({
+        data: createData,
+      });
+      expect(result).toEqual(mockUser);
+    });
+
     it('should propagate errors when prisma create fails', async () => {
       const createData = {
         email: 'duplicate@test.com',
