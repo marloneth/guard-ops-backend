@@ -12,6 +12,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let mockUsersService: any;
   let mockJwtService: any;
+  let mockPrismaService: any;
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -26,9 +27,21 @@ describe('AuthService', () => {
 
     mockJwtService = {
       signAsync: jest.fn(),
+      decode: jest.fn(),
     };
 
-    service = new AuthService(mockUsersService, mockJwtService);
+    mockPrismaService = {
+      tokenBlacklist: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+      },
+    };
+
+    service = new AuthService(
+      mockUsersService,
+      mockJwtService,
+      mockPrismaService,
+    );
   });
 
   it('register should hash password, create user and return issued tokens', async () => {
@@ -180,5 +193,93 @@ describe('AuthService', () => {
     mockJwtService.signAsync.mockRejectedValueOnce(new Error('jwt failure'));
 
     await expect(service.register(dto as any)).rejects.toThrow('jwt failure');
+  });
+
+  it('logout should decode token and add to blacklist', async () => {
+    const dto = { refreshToken: 'valid.refresh.token' };
+    const userId = 'user-123';
+    const decodedToken = {
+      sub: userId,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+
+    mockJwtService.decode.mockReturnValueOnce(decodedToken);
+    mockPrismaService.tokenBlacklist.create.mockResolvedValueOnce({});
+
+    const result = await service.logout(dto, userId);
+
+    expect(mockJwtService.decode).toHaveBeenCalledWith('valid.refresh.token');
+    expect(mockPrismaService.tokenBlacklist.create).toHaveBeenCalledWith({
+      data: {
+        token: 'valid.refresh.token',
+        userId,
+        expiresAt: new Date(decodedToken.exp * 1000),
+      },
+    });
+    expect(result).toEqual({ message: 'Logged out successfully' });
+  });
+
+  it('logout should throw UnauthorizedException for invalid token', async () => {
+    const dto = { refreshToken: 'invalid.token' };
+    const userId = 'user-123';
+
+    mockJwtService.decode.mockReturnValueOnce(null);
+
+    await expect(service.logout(dto, userId)).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('logout should throw UnauthorizedException for string decoded token', async () => {
+    const dto = { refreshToken: 'string.token' };
+    const userId = 'user-123';
+
+    mockJwtService.decode.mockReturnValueOnce('string');
+
+    await expect(service.logout(dto, userId)).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('isTokenBlacklisted should return true when token is blacklisted', async () => {
+    const token = 'blacklisted.token';
+    mockPrismaService.tokenBlacklist.findUnique.mockResolvedValueOnce({
+      token,
+    });
+
+    const result = await service.isTokenBlacklisted(token);
+
+    expect(mockPrismaService.tokenBlacklist.findUnique).toHaveBeenCalledWith({
+      where: { token },
+    });
+    expect(result).toBe(true);
+  });
+
+  it('isTokenBlacklisted should return false when token is not blacklisted', async () => {
+    const token = 'valid.token';
+    mockPrismaService.tokenBlacklist.findUnique.mockResolvedValueOnce(null);
+
+    const result = await service.isTokenBlacklisted(token);
+
+    expect(mockPrismaService.tokenBlacklist.findUnique).toHaveBeenCalledWith({
+      where: { token },
+    });
+    expect(result).toBe(false);
+  });
+
+  it('logout should propagate database errors', async () => {
+    const dto = { refreshToken: 'valid.refresh.token' };
+    const userId = 'user-123';
+    const decodedToken = {
+      sub: userId,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+
+    mockJwtService.decode.mockReturnValueOnce(decodedToken);
+    mockPrismaService.tokenBlacklist.create.mockRejectedValueOnce(
+      new Error('Database error'),
+    );
+
+    await expect(service.logout(dto, userId)).rejects.toThrow('Database error');
   });
 });

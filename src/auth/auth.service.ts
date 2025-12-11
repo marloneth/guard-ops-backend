@@ -1,15 +1,18 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../prisma/prisma.service';
 import * as argon2 from 'argon2';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { LogoutDto } from './dto/logout.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -41,6 +44,32 @@ export class AuthService {
 
   async refreshTokens(userId: number, email: string) {
     return this.issueTokens(userId, email);
+  }
+
+  async logout(dto: LogoutDto, userId: string) {
+    const decoded = await this.jwt.decode(dto.refreshToken);
+    if (!decoded || typeof decoded === 'string') {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    const expiresAt = new Date(decoded.exp! * 1000);
+
+    await this.prisma.tokenBlacklist.create({
+      data: {
+        token: dto.refreshToken,
+        userId,
+        expiresAt,
+      },
+    });
+
+    return { message: 'Logged out successfully' };
+  }
+
+  async isTokenBlacklisted(token: string): Promise<boolean> {
+    const blacklisted = await this.prisma.tokenBlacklist.findUnique({
+      where: { token },
+    });
+    return !!blacklisted;
   }
 
   async issueTokens(userId: number, email: string) {

@@ -24,6 +24,9 @@ describe('AuthController', () => {
       register: jest.fn().mockResolvedValue(registerResponseSuccess),
       login: jest.fn().mockResolvedValue(loginResponseSuccess),
       refreshTokens: jest.fn().mockResolvedValue(refreshResponseSuccess),
+      logout: jest
+        .fn()
+        .mockResolvedValue({ message: 'Logged out successfully' }),
     };
 
     controller = new AuthController(mockAuthService);
@@ -90,5 +93,22 @@ describe('AuthController', () => {
     await expect(controller.refresh(req, {} as any)).rejects.toThrow(
       'refresh error',
     );
+  });
+
+  it('should call authService.logout with dto and userId and return its result', async () => {
+    const dto = { refreshToken: 'refresh.token' };
+    const req = { user: { sub: 'user-id-123' } } as any;
+    const result = await controller.logout(dto, req);
+
+    expect(mockAuthService.logout).toHaveBeenCalledWith(dto, 'user-id-123');
+    expect(result).toEqual({ message: 'Logged out successfully' });
+  });
+
+  it('logout should propagate service errors', async () => {
+    const dto = { refreshToken: 'refresh.token' };
+    const req = { user: { sub: 'user-id-123' } } as any;
+    mockAuthService.logout.mockRejectedValueOnce(new Error('logout error'));
+
+    await expect(controller.logout(dto, req)).rejects.toThrow('logout error');
   });
 });

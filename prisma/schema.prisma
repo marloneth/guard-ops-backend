@@ -195,6 +195,20 @@ model FormAttachment {
 }
 
 // ------------------------------------------------------
+//  Token Blacklist
+// ------------------------------------------------------
+model TokenBlacklist {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// ------------------------------------------------------
 //  Audit Logs
 // ------------------------------------------------------
 model AuditLog {
