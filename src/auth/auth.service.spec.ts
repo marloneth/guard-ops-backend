@@ -23,6 +23,7 @@ describe('AuthService', () => {
     mockUsersService = {
       create: jest.fn(),
       findByEmail: jest.fn(),
+      findById: jest.fn(),
     };
 
     mockJwtService = {
@@ -57,6 +58,13 @@ describe('AuthService', () => {
     mockUsersService.create.mockResolvedValueOnce({
       id: '10',
       email: dto.email,
+      roleId: 1,
+    });
+
+    mockUsersService.findById.mockResolvedValueOnce({
+      id: '10',
+      email: dto.email,
+      roleId: 1,
     });
 
     mockJwtService.signAsync
@@ -76,12 +84,12 @@ describe('AuthService', () => {
 
     expect(mockJwtService.signAsync).toHaveBeenNthCalledWith(
       1,
-      { sub: Number('10'), email: dto.email },
+      { sub: '10', roleId: 1 },
       { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' },
     );
     expect(mockJwtService.signAsync).toHaveBeenNthCalledWith(
       2,
-      { sub: Number('10'), email: dto.email },
+      { sub: '10' },
       { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
     );
 
@@ -98,6 +106,13 @@ describe('AuthService', () => {
       id: '20',
       email: dto.email,
       passwordHash: 'hashed-pw',
+      roleId: 1,
+    });
+
+    mockUsersService.findById.mockResolvedValueOnce({
+      id: '20',
+      email: dto.email,
+      roleId: 1,
     });
 
     jest.spyOn(argon2, 'verify').mockResolvedValueOnce(true);
@@ -130,6 +145,7 @@ describe('AuthService', () => {
       id: '30',
       email: 'user@t.test',
       passwordHash: 'hashed',
+      roleId: 1,
     });
 
     jest.spyOn(argon2, 'verify').mockResolvedValueOnce(false);
@@ -140,20 +156,26 @@ describe('AuthService', () => {
   });
 
   it('refreshTokens should call issueTokens and return tokens', async () => {
+    mockUsersService.findById.mockResolvedValueOnce({
+      id: '55',
+      email: 'r@t.test',
+      roleId: 1,
+    });
+
     mockJwtService.signAsync
       .mockResolvedValueOnce('access-token-refresh')
       .mockResolvedValueOnce('refresh-token-refresh');
 
-    const result = await service.refreshTokens(55, 'r@t.test');
+    const result = await service.refreshTokens('55');
 
     expect(mockJwtService.signAsync).toHaveBeenNthCalledWith(
       1,
-      { sub: 55, email: 'r@t.test' },
+      { sub: '55', roleId: 1 },
       { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' },
     );
     expect(mockJwtService.signAsync).toHaveBeenNthCalledWith(
       2,
-      { sub: 55, email: 'r@t.test' },
+      { sub: '55' },
       { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
     );
 
@@ -189,6 +211,12 @@ describe('AuthService', () => {
     mockUsersService.create.mockResolvedValueOnce({
       id: '10',
       email: dto.email,
+      roleId: 1,
+    });
+    mockUsersService.findById.mockResolvedValueOnce({
+      id: '10',
+      email: dto.email,
+      roleId: 1,
     });
     mockJwtService.signAsync.mockRejectedValueOnce(new Error('jwt failure'));
 

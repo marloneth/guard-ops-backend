@@ -29,7 +29,7 @@ export class AuthService {
       },
     });
 
-    return this.issueTokens(Number(user.id), user.email);
+    return this.issueTokens(user.id);
   }
 
   async login(dto: LoginDto) {
@@ -39,11 +39,11 @@ export class AuthService {
     const valid = await argon2.verify(user.passwordHash, dto.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    return this.issueTokens(Number(user.id), user.email);
+    return this.issueTokens(user.id);
   }
 
-  async refreshTokens(userId: number, email: string) {
-    return this.issueTokens(userId, email);
+  async refreshTokens(userId: string) {
+    return this.issueTokens(userId);
   }
 
   async logout(dto: LogoutDto, userId: string) {
@@ -72,9 +72,10 @@ export class AuthService {
     return !!blacklisted;
   }
 
-  async issueTokens(userId: number, email: string) {
+  async issueTokens(userId: string) {
+    const user = await this.usersService.findById(userId);
     const accessToken = await this.jwt.signAsync(
-      { sub: userId, email },
+      { sub: userId, roleId: user.roleId },
       {
         secret: process.env.JWT_ACCESS_SECRET,
         expiresIn: '15m',
@@ -82,7 +83,7 @@ export class AuthService {
     );
 
     const refreshToken = await this.jwt.signAsync(
-      { sub: userId, email },
+      { sub: userId },
       {
         secret: process.env.JWT_REFRESH_SECRET,
         expiresIn: '7d',
