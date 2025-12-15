@@ -1,5 +1,8 @@
-import { RoleName } from '@prisma/client';
 import { RolesController } from './roles.controller';
+
+enum RoleName {
+  ADMIN = 'ADMIN',
+}
 
 describe('RolesController', () => {
   let controller: RolesController;

@@ -30,7 +30,7 @@ export class AuthController {
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   refresh(@Req() req: any, @Body() _dto: RefreshTokenDto) {
-    return this.authService.refreshTokens(req.user.sub, req.user.email);
+    return this.authService.refreshTokens(req.user.sub);
   }
 
   @UseGuards(JwtAccessGuard)

@@ -57,10 +57,7 @@ describe('AuthController', () => {
       user: { sub: 'user-id-123', email: 'test@example.com' },
     } as any;
     const result = await controller.refresh(req, {} as any);
-    expect(mockAuthService.refreshTokens).toHaveBeenCalledWith(
-      'user-id-123',
-      'test@example.com',
-    );
+    expect(mockAuthService.refreshTokens).toHaveBeenCalledWith('user-id-123');
     expect(result).toEqual(refreshResponseSuccess);
   });
 
