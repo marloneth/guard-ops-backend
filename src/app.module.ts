@@ -11,6 +11,6 @@ import { PermissionsGuard } from './auth/guards/permissions.guard';
 @Module({
   imports: [PrismaModule, UsersModule, AuthModule, RolesModule],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: PermissionsGuard }],
+  providers: [AppService],
 })
 export class AppModule {}

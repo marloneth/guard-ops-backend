@@ -13,6 +13,7 @@ describe('AuthService', () => {
   let mockUsersService: any;
   let mockJwtService: any;
   let mockPrismaService: any;
+  let mockRolesService: any;
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -38,10 +39,15 @@ describe('AuthService', () => {
       },
     };
 
+    mockRolesService = {
+      findById: jest.fn(),
+    };
+
     service = new AuthService(
       mockUsersService,
       mockJwtService,
       mockPrismaService,
+      mockRolesService,
     );
   });
 
@@ -67,6 +73,11 @@ describe('AuthService', () => {
       roleId: 1,
     });
 
+    mockRolesService.findById.mockResolvedValueOnce({
+      id: 1,
+      name: 'ADMIN',
+    });
+
     mockJwtService.signAsync
       .mockResolvedValueOnce('access-token-register')
       .mockResolvedValueOnce('refresh-token-register');
@@ -84,7 +95,7 @@ describe('AuthService', () => {
 
     expect(mockJwtService.signAsync).toHaveBeenNthCalledWith(
       1,
-      { sub: '10', roleId: 1 },
+      { sub: '10', role: 'ADMIN' },
       { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' },
     );
     expect(mockJwtService.signAsync).toHaveBeenNthCalledWith(
@@ -113,6 +124,11 @@ describe('AuthService', () => {
       id: '20',
       email: dto.email,
       roleId: 1,
+    });
+
+    mockRolesService.findById.mockResolvedValueOnce({
+      id: 1,
+      name: 'ADMIN',
     });
 
     jest.spyOn(argon2, 'verify').mockResolvedValueOnce(true);
@@ -162,6 +178,11 @@ describe('AuthService', () => {
       roleId: 1,
     });
 
+    mockRolesService.findById.mockResolvedValueOnce({
+      id: 1,
+      name: 'ADMIN',
+    });
+
     mockJwtService.signAsync
       .mockResolvedValueOnce('access-token-refresh')
       .mockResolvedValueOnce('refresh-token-refresh');
@@ -170,7 +191,7 @@ describe('AuthService', () => {
 
     expect(mockJwtService.signAsync).toHaveBeenNthCalledWith(
       1,
-      { sub: '55', roleId: 1 },
+      { sub: '55', role: 'ADMIN' },
       { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' },
     );
     expect(mockJwtService.signAsync).toHaveBeenNthCalledWith(
@@ -218,6 +239,12 @@ describe('AuthService', () => {
       email: dto.email,
       roleId: 1,
     });
+
+    mockRolesService.findById.mockResolvedValueOnce({
+      id: 1,
+      name: 'ADMIN',
+    });
+
     mockJwtService.signAsync.mockRejectedValueOnce(new Error('jwt failure'));
 
     await expect(service.register(dto as any)).rejects.toThrow('jwt failure');

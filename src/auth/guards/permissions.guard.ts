@@ -2,7 +2,6 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Permission } from '../constants/permissions.constants';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
-import { Role } from '@prisma/client';
 import { ROLE_PERMISSIONS } from '../constants/roles.constants';
 
 @Injectable()
@@ -20,13 +19,13 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user as { role: Role };
+    const user = request.user;
 
-    if (!user || !user.role) {
+    if (!user?.role) {
       return false;
     }
 
-    const rolePermissions = ROLE_PERMISSIONS[user.role.name];
+    const rolePermissions = ROLE_PERMISSIONS[user.role];
 
     // Admin wildcard
     if ((rolePermissions as ['*']).includes('*')) {

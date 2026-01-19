@@ -6,6 +6,7 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { LogoutDto } from './dto/logout.dto';
+import { RolesService } from '../roles/roles.service';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +14,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
+    private readonly rolesService: RolesService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -74,8 +76,9 @@ export class AuthService {
 
   async issueTokens(userId: string) {
     const user = await this.usersService.findById(userId);
+    const role = await this.rolesService.findById(user.roleId);
     const accessToken = await this.jwt.signAsync(
-      { sub: userId, roleId: user.roleId },
+      { sub: userId, role: role.name },
       {
         secret: process.env.JWT_ACCESS_SECRET,
         expiresIn: '15m',
